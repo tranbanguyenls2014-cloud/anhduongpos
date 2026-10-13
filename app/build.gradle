@@ -1,0 +1,71 @@
+plugins {
+    id 'com.android.application'
+}
+
+// ---- Link Web App được GHI SẴN vào APK ----
+// Ưu tiên: biến APP_URL (GitHub Actions / -PAPP_URL=...) -> file app_url.txt ở thư mục gốc.
+def readAppUrl() {
+    def fromProp = (project.findProperty('APP_URL') ?: '').toString().trim()
+    if (!fromProp.isEmpty()) return fromProp
+    def f = rootProject.file('app_url.txt')
+    if (!f.exists()) return ''
+    def line = f.readLines('UTF-8').collect { it.trim() }.find { !it.isEmpty() && !it.startsWith('#') }
+    return line ?: ''
+}
+def appUrl = readAppUrl()
+if (appUrl.isEmpty()) {
+    logger.warn('CẢNH BÁO: chưa có link Web App (app_url.txt / APP_URL). APK sẽ hỏi link ở lần mở đầu.')
+} else if (!appUrl.startsWith('https://')) {
+    throw new GradleException('Link Web App phải bắt đầu bằng https:// (hiện là: ' + appUrl + ')')
+} else if (appUrl.endsWith('/dev')) {
+    throw new GradleException('Đây là link /dev (chỉ chủ dự án mở được). Hãy dùng link /exec: Apps Script > Deploy > Manage deployments > Web app URL.')
+}
+def vCode = (project.findProperty('VERSION_CODE') ?: '1').toString().toInteger()
+
+android {
+    namespace 'vn.kusuu.pos'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "vn.kusuu.pos"
+        minSdk 26
+        targetSdk 34
+        versionCode vCode
+        versionName "1.0." + vCode
+        buildConfigField 'String', 'APP_URL', '"' + appUrl.replace('\\', '\\\\').replace('"', '\\"') + '"'
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Khóa ký CỐ ĐỊNH: mọi bản build (kể cả build trên GitHub) cùng chữ ký nên cài đè/cập nhật được.
+    signingConfigs {
+        kusuu {
+            storeFile rootProject.file('kusuu-release.keystore')
+            storePassword 'kusuu-pos-2026'
+            keyAlias 'kusuu'
+            keyPassword 'kusuu-pos-2026'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.kusuu
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.kusuu
+        }
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}

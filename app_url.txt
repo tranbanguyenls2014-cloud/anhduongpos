@@ -1,0 +1,3 @@
+# Link Web App (kết thúc bằng /exec) được GHI SẴN vào APK. Dòng bắt đầu bằng # là ghi chú.
+# Đổi link: sửa dòng bên dưới (hoặc đặt biến APP_URL trên GitHub: Settings > Secrets and variables > Actions > Variables).
+https://script.google.com/macros/s/AKfycbwr8Vs9XqB3GxMpmtGl-0135e6dxbB3Jo5saLlbdFdtm5jJXd4rXTYDJA5wW0j53TA3/exec
